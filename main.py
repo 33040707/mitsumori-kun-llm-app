@@ -113,22 +113,31 @@ if st.button("見積案を作成する", type="primary"):
         # APIキーを設定
         openai.api_key = API_KEY
         
-        with st.spinner('Googleドライブ内の資料を読み込み中...'):
-            # RAG処理：フォルダ内のファイルをテキスト化
-            context_data, count = extract_text_from_files(DATA_FOLDER)
-            
-            if count == 0:
-                st.warning("有効なデータが見つかりませんでした。AIの一般知識のみで回答します。")
-            else:
-                st.success(f"過去資料 {count} 件を参照しました。")
+        # デバッグ用: DATA_FOLDERの値を確認
+        st.write(f"DEBUG: DATA_FOLDER = {DATA_FOLDER}")
 
-        # トークン数制限対策
-        if len(context_data) > 30000:
-            context_data = context_data[:30000] + "\n...(データ量が多すぎるため省略)..."
-            st.warning("⚠️ 参照データが多すぎるため、一部のみをAIに渡しました。")
+        # フォルダ存在確認のエラーメッセージを改善
+        if not DATA_FOLDER:
+            st.error("データフォルダのパスが設定されていません。.envファイルを確認してください。")
+        elif not os.path.exists(DATA_FOLDER):
+            st.error(f"データフォルダが見つかりません: {DATA_FOLDER} を確認してください。")
+        else:
+            with st.spinner('Googleドライブ内の資料を読み込み中...'):
+                # RAG処理：フォルダ内のファイルをテキスト化
+                context_data, count = extract_text_from_files(DATA_FOLDER)
+                
+                if count == 0:
+                    st.warning("有効なデータが見つかりませんでした。AIの一般知識のみで回答します。")
+                else:
+                    st.success(f"過去資料 {count} 件を参照しました。")
 
-        # プロンプト作成（技術者単価や計算式の詳細な指示を含む）
-        system_prompt = """
+            # トークン数制限対策
+            if len(context_data) > 30000:
+                context_data = context_data[:30000] + "\n...(データ量が多すぎるため省略)..."
+                st.warning("⚠️ 参照データが多すぎるため、一部のみをAIに渡しました。")
+
+            # プロンプト作成（技術者単価や計算式の詳細な指示を含む）
+            system_prompt = """
 #役割
 あなたは建設コンサルタントに従事する技術者として見積書作成支援者として機能してください。
 #命令：
@@ -166,7 +175,7 @@ o   成果物納入時：主任技師0.5人、技師（A）0.5人、技師（B�
 顧客PDFで示されている項目ごとに歩掛を入力し、最終的な積算金額までを表形式および箇条書きで分かりやすく出力してください。
         """
 
-        user_prompt = f"""
+            user_prompt = f"""
         【案件名】: {project_name}
         【場所】: {location}
         【作業内容】:
@@ -176,21 +185,21 @@ o   成果物納入時：主任技師0.5人、技師（A）0.5人、技師（B�
         {context_data}
         """
 
-        with st.spinner('AIが見積を計算中...'):
-            try:
-                response = openai.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    temperature=0.1,
-                )
-                
-                result = response.choices[0].message.content
-                
-                st.subheader("2. 作成結果")
-                st.markdown(result)
-                
-            except Exception as e:
-                st.error(f"AI生成エラー: {e}")
+            with st.spinner('AIが見積を計算中...'):
+                try:
+                    response = openai.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        temperature=0.1,
+                    )
+                    
+                    result = response.choices[0].message.content
+                    
+                    st.subheader("2. 作成結果")
+                    st.markdown(result)
+                    
+                except Exception as e:
+                    st.error(f"AI生成エラー: {e}")
