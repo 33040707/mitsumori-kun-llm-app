@@ -6,8 +6,8 @@ import glob
 from pypdf import PdfReader
 from docx import Document
 from dotenv import load_dotenv  # 追加：環境変数を読み込むライブラリ
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain.chat_models import ChatOpenAI
+from langchain.schema import SystemMessage, HumanMessage
 
 # --- 設定読み込み ---
 # .envファイルから環境変数をロード
