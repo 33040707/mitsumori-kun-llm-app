@@ -11,9 +11,21 @@ from dotenv import load_dotenv  # 追加：環境変数を読み込むライブ�
 # .envファイルから環境変数をロード
 load_dotenv()
 
+# プロジェクトディレクトリを定義
+PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # 環境変数から値を取得
 API_KEY = os.getenv("OPENAI_API_KEY")
-DATA_FOLDER = os.getenv("GOOGLE_DRIVE_PATH")
+DATA_FOLDER = os.getenv("GOOGLE_DRIVE_PATH", os.path.join(PROJECT_DIR, 'data'))
+
+
+# フォルダ存在確認と作成
+if not os.path.exists(DATA_FOLDER):
+    try:
+        os.makedirs(DATA_FOLDER)
+        st.info(f"データフォルダを作成しました: {DATA_FOLDER}")
+    except Exception as e:
+        st.error(f"データフォルダの作成に失敗しました: {e}")
 
 
 # --- 関数定義：各種ファイルからテキストを抽出する ---
