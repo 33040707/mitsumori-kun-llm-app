@@ -5,16 +5,10 @@ import os
 import glob
 from pypdf import PdfReader
 from docx import Document
-from dotenv import load_dotenv  # 追加：環境変数を読み込むライブラリ
 
 # --- 設定読み込み ---
-# .envファイルから環境変数をロード
-load_dotenv()
-
-# 環境変数から値を取得
-API_KEY = os.getenv("OPENAI_API_KEY")
-
-# プロジェクトフォルダ内の'data'フォルダを参照
+# APIキーとデータフォルダを直接設定
+API_KEY = "your_openai_api_key"  # 必要に応じて直接設定
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FOLDER = os.path.join(PROJECT_DIR, 'data')
 
