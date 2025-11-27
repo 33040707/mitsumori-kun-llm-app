@@ -6,6 +6,7 @@ import glob
 from pypdf import PdfReader
 from docx import Document
 from dotenv import load_dotenv
+from openai import AuthenticationError  # AuthenticationErrorをインポート
 
 # --- 設定読み込み ---
 # .envファイルから環境変数をロード
@@ -121,7 +122,7 @@ if st.button("見積案を作成する", type="primary"):
             openai.api_key = API_KEY
             openai.Model.list()  # APIキーの有効性を確認
             st.success("✅ APIキーが有効です。")
-        except openai.error.AuthenticationError:
+        except AuthenticationError:
             st.error("無効なAPIキーです。正しいキーを設定してください。")
 
     if not work_items:
