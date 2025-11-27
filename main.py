@@ -120,10 +120,13 @@ if st.button("見積案を作成する", type="primary"):
     else:
         try:
             openai.api_key = API_KEY
-            openai.Model.list()  # APIキーの有効性を確認
+            # APIキーの有効性を確認するために簡単なリクエストを送信
+            openai.Completion.create(model="text-davinci-003", prompt="Hello", max_tokens=5)
             st.success("✅ APIキーが有効です。")
-        except AuthenticationError:
+        except openai.error.AuthenticationError:
             st.error("無効なAPIキーです。正しいキーを設定してください。")
+        except Exception as e:
+            st.error(f"予期しないエラーが発生しました: {e}")
 
     if not work_items:
         st.warning("作業内容を入力してください。")
