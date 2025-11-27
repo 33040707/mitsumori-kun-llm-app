@@ -5,15 +5,18 @@ import os
 import glob
 from pypdf import PdfReader
 from docx import Document
+from dotenv import load_dotenv
 
 # --- 設定読み込み ---
-# APIキーとデータフォルダを直接設定
-API_KEY = "your_openai_api_key"  # 必要に応じて直接設定
-PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_FOLDER = os.path.join(PROJECT_DIR, 'data')
+# .envファイルから環境変数をロード
+load_dotenv()
+
+# 環境変数から値を取得
+API_KEY = os.getenv("OPENAI_API_KEY")
+DATA_FOLDER = os.getenv("GOOGLE_DRIVE_PATH")
 
 # フォルダ存在確認と作成
-if not os.path.exists(DATA_FOLDER):
+if DATA_FOLDER and not os.path.exists(DATA_FOLDER):
     os.makedirs(DATA_FOLDER)
     st.info(f"データフォルダを作成しました: {DATA_FOLDER}")
 
