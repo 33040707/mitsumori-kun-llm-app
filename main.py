@@ -111,9 +111,20 @@ with col2:
                               placeholder="例：\n・擁壁工（H=3.0m, L=20m）\n・場所打ち杭\n・過去のA地区の実績を参考にしたい")
 
 if st.button("見積案を作成する", type="primary"):
+    # --- APIキーの確認とエラーハンドリング ---
     if not API_KEY:
         st.error("APIキーが設定されていません。.envファイルを確認してください。")
-    elif not work_items:
+    elif len(API_KEY) < 20:  # 簡易的なキーの長さチェック
+        st.error("無効なAPIキーが設定されています。正しいキーを確認してください。")
+    else:
+        try:
+            openai.api_key = API_KEY
+            openai.Model.list()  # APIキーの有効性を確認
+            st.success("✅ APIキーが有効です。")
+        except openai.error.AuthenticationError:
+            st.error("無効なAPIキーです。正しいキーを設定してください。")
+
+    if not work_items:
         st.warning("作業内容を入力してください。")
     elif not os.path.exists(DATA_FOLDER):
         st.error(f"データフォルダが見つかりません: {DATA_FOLDER} を確認してください。")
