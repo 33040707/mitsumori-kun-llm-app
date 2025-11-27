@@ -6,6 +6,8 @@ import glob
 from pypdf import PdfReader
 from docx import Document
 from dotenv import load_dotenv  # 追加：環境変数を読み込むライブラリ
+from langchain_openai import ChatOpenAI
+from langchain.schema import SystemMessage, HumanMessage
 
 # --- 設定読み込み ---
 # .envファイルから環境変数をロード
@@ -208,3 +210,27 @@ o   成果物納入時：主任技師0.5人、技師（A）0.5人、技師（B�
 
             except Exception as e:
                 st.error(f"AI生成エラー: {e}")
+
+# --- LangChainを使用したAI応答の生成 ---
+if st.button("AI応答を生成", type="primary"):
+    if not API_KEY:
+        st.error("APIキーが設定されていません。.envファイルを確認してください。")
+    else:
+        try:
+            # LangChainのChatOpenAIを初期化
+            llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0.5, openai_api_key=API_KEY)
+
+            # メッセージの準備
+            messages = [
+                SystemMessage(content="You are a helpful assistant."),
+                HumanMessage(content=work_items),
+            ]
+
+            # 応答の生成
+            output = llm(messages)
+
+            # 結果を表示
+            st.subheader("AI応答")
+            st.write(output.content)
+        except Exception as e:
+            st.error(f"AI応答の生成中にエラーが発生しました: {e}")
