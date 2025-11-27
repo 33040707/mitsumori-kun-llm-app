@@ -13,7 +13,15 @@ load_dotenv()
 
 # 環境変数から値を取得
 API_KEY = os.getenv("OPENAI_API_KEY")
-DATA_FOLDER = os.getenv("GOOGLE_DRIVE_PATH")
+
+# プロジェクトフォルダ内の'data'フォルダを参照
+PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_FOLDER = os.path.join(PROJECT_DIR, 'data')
+
+# フォルダ存在確認と作成
+if not os.path.exists(DATA_FOLDER):
+    os.makedirs(DATA_FOLDER)
+    st.info(f"データフォルダを作成しました: {DATA_FOLDER}")
 
 # --- 関数定義：各種ファイルからテキストを抽出する ---
 def extract_text_from_files(folder_path):
@@ -86,11 +94,11 @@ with st.sidebar:
         st.error("🚫 APIキー: 未設定 (.envを確認)")
 
     # フォルダパスの読み込み確認
-    if DATA_FOLDER and os.path.exists(DATA_FOLDER):
+    if os.path.exists(DATA_FOLDER):
         st.success("✅ データフォルダ: 接続完了")
         st.caption(f"Path: {DATA_FOLDER}")
     else:
-        st.error("🚫 データフォルダ: 未接続 (.envを確認)")
+        st.error("🚫 データフォルダ: 未接続")
 
 # --- メインエリア ---
 st.subheader("1. 新規案件の条件入力")
@@ -122,7 +130,7 @@ if st.button("見積案を作成する", type="primary"):
         elif not os.path.exists(DATA_FOLDER):
             st.error(f"データフォルダが見つかりません: {DATA_FOLDER} を確認してください。")
         else:
-            with st.spinner('Googleドライブ内の資料を読み込み中...'):
+            with st.spinner('資料を読み込み中...'):
                 # RAG処理：フォルダ内のファイルをテキスト化
                 context_data, count = extract_text_from_files(DATA_FOLDER)
                 
