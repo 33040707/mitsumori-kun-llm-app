@@ -5,42 +5,34 @@ import os
 import glob
 from pypdf import PdfReader
 from docx import Document
-from dotenv import load_dotenv
-from openai import AuthenticationError  # AuthenticationErrorをインポート
+from dotenv import load_dotenv  # 追加：環境変数を読み込むライブラリ
 
 # --- 設定読み込み ---
 # .envファイルから環境変数をロード
 load_dotenv()
 
-# プロジェクトディレクトリを定義
-PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-
 # 環境変数から値を取得
 API_KEY = os.getenv("OPENAI_API_KEY")
-DATA_FOLDER = os.getenv("GOOGLE_DRIVE_PATH", os.path.join(PROJECT_DIR, 'data'))
+DATA_FOLDER = os.getenv("GOOGLE_DRIVE_PATH")
 
-# フォルダ存在確認と作成
-if not os.path.exists(DATA_FOLDER):
-    os.makedirs(DATA_FOLDER)
-    st.info(f"データフォルダを作成しました: {DATA_FOLDER}")
 
 # --- 関数定義：各種ファイルからテキストを抽出する ---
 def extract_text_from_files(folder_path):
     """指定フォルダ内のPDF, Excel, Wordからテキストを抽出して結合する"""
     combined_text = ""
     file_count = 0
-    
+
     # 対応する拡張子
     extensions = ['*.pdf', '*.docx', '*.xlsx']
     files = []
-    
+
     # フォルダ内の全ファイルを検索
     if folder_path and os.path.exists(folder_path):
         for ext in extensions:
             files.extend(glob.glob(os.path.join(folder_path, ext)))
     else:
         return "フォルダが見つからないか、パスが正しくありません。", 0
-    
+
     if not files:
         return "指定フォルダにファイルが見つかりませんでした。", 0
 
@@ -55,7 +47,7 @@ def extract_text_from_files(folder_path):
                     text += page.extract_text() + "\n"
                 combined_text += text
                 file_count += 1
-            
+
             # 2. Wordの場合
             elif file_path.endswith('.docx'):
                 doc = Document(file_path)
@@ -64,7 +56,7 @@ def extract_text_from_files(folder_path):
                     text += para.text + "\n"
                 combined_text += text
                 file_count += 1
-            
+
             # 3. Excelの場合
             elif file_path.endswith('.xlsx'):
                 xls = pd.read_excel(file_path, sheet_name=None)
@@ -74,11 +66,12 @@ def extract_text_from_files(folder_path):
                     text += df.to_markdown(index=False) + "\n"
                 combined_text += text
                 file_count += 1
-                
+
         except Exception as e:
             st.warning(f"読込エラー: {file_name} - {e}")
-            
+
     return combined_text, file_count
+
 
 # --- アプリ本体 ---
 st.set_page_config(page_title="建設コンサル向け見積作成支援AI (Pro)", layout="wide")
@@ -87,7 +80,7 @@ st.title("🏗️ 建設コンサル見積作成支援システム (RAG対応版
 # --- サイドバー：設定確認 ---
 with st.sidebar:
     st.header("⚙️ システム設定状況")
-    
+
     # APIキーの読み込み確認（セキュリティのためキー自体は表示しない）
     if API_KEY:
         st.success("✅ APIキー: 読込完了")
@@ -95,11 +88,11 @@ with st.sidebar:
         st.error("🚫 APIキー: 未設定 (.envを確認)")
 
     # フォルダパスの読み込み確認
-    if os.path.exists(DATA_FOLDER):
+    if DATA_FOLDER and os.path.exists(DATA_FOLDER):
         st.success("✅ データフォルダ: 接続完了")
         st.caption(f"Path: {DATA_FOLDER}")
     else:
-        st.error("🚫 データフォルダ: 未接続")
+        st.error("🚫 データフォルダ: 未接続 (.envを確認)")
 
 # --- メインエリア ---
 st.subheader("1. 新規案件の条件入力")
@@ -108,38 +101,21 @@ with col1:
     project_name = st.text_input("案件名")
     location = st.text_input("施工場所")
 with col2:
-    work_items = st.text_area("作業内容・条件", height=100, 
+    work_items = st.text_area("作業内容・条件", height=100,
                               placeholder="例：\n・擁壁工（H=3.0m, L=20m）\n・場所打ち杭\n・過去のA地区の実績を参考にしたい")
 
 if st.button("見積案を作成する", type="primary"):
-    # --- APIキーの確認とエラーハンドリング ---
     if not API_KEY:
         st.error("APIキーが設定されていません。.envファイルを確認してください。")
-    elif len(API_KEY) < 20:  # 簡易的なキーの長さチェック
-        st.error("無効なAPIキーが設定されています。正しいキーを確認してください。")
-    else:
-        try:
-            openai.api_key = API_KEY
-            # APIキーの有効性を確認するために簡単なリクエストを送信
-            openai.Completion.create(model="text-davinci-003", prompt="Hello", max_tokens=5)
-            st.success("✅ APIキーが有効です。")
-        except openai.error.AuthenticationError:
-            st.error("無効なAPIキーです。正しいキーを設定してください。")
-        except Exception as e:
-            st.error(f"予期しないエラーが発生しました: {e}")
-
-    if not work_items:
+    elif not work_items:
         st.warning("作業内容を入力してください。")
-    elif not os.path.exists(DATA_FOLDER):
-        st.error(f"データフォルダが見つかりません: {DATA_FOLDER} を確認してください。")
+    elif not DATA_FOLDER or not os.path.exists(DATA_FOLDER):
+        st.error("データフォルダが見つかりません。.envファイルを確認してください。")
     else:
         # APIキーを設定
         openai.api_key = API_KEY
 
-        # デバッグ用: DATA_FOLDERの値を確認
-        st.write(f"DEBUG: DATA_FOLDER = {DATA_FOLDER}")
-
-        with st.spinner('資料を読み込み中...'):
+        with st.spinner('Googleドライブ内の資料を読み込み中...'):
             # RAG処理：フォルダ内のファイルをテキスト化
             context_data, count = extract_text_from_files(DATA_FOLDER)
 
@@ -212,11 +188,11 @@ o   成果物納入時：主任技師0.5人、技師（A）0.5人、技師（B�
                     ],
                     temperature=0.1,
                 )
-                
+
                 result = response.choices[0].message.content
-                
+
                 st.subheader("2. 作成結果")
                 st.markdown(result)
-                
+
             except Exception as e:
                 st.error(f"AI生成エラー: {e}")
